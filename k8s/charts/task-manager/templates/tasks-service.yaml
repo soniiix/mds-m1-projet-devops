@@ -1,0 +1,39 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: tasks-service
+  labels:
+    app: tasks-service
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: tasks-service
+  template:
+    metadata:
+      labels:
+        app: tasks-service
+    spec:
+      containers:
+      - name: tasks-service
+        image: "{{ .Values.images.tasksService.repository }}:{{ .Values.images.tasksService.tag }}"
+        imagePullPolicy: {{ .Values.images.tasksService.pullPolicy }}
+        ports:
+        - containerPort: {{ .Values.ports.tasksService }}
+        env:
+        - name: PORT
+          value: "{{ .Values.ports.tasksService }}"
+        - name: DATABASE_URL
+          value: "postgres://{{ .Values.postgres.user }}:{{ .Values.postgres.password }}@postgres:{{ .Values.ports.postgres }}/{{ .Values.postgres.db }}"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: tasks-service
+spec:
+  selector:
+    app: tasks-service
+  ports:
+  - protocol: TCP
+    port: {{ .Values.ports.tasksService }}
+    targetPort: {{ .Values.ports.tasksService }}

@@ -1,0 +1,62 @@
+version: '3'
+
+vars:
+  REGISTRY: localhost:5001
+  SERVICES: frontend tasks-service stats-service
+
+tasks:
+  install:
+    desc: Installe les dépendances de tous les services
+    cmds:
+      - cd tasks-service && npm install
+      - cd stats-service && npm install
+      - cd frontend && npm install
+
+  lint:
+    desc: Exécute le linter sur tous les services
+    cmds:
+      - cd tasks-service && npm run lint
+      - cd stats-service && npm run lint
+      - cd frontend && npm run lint
+
+  test:
+    desc: Exécute les tests unitaires sur tous les services
+    cmds:
+      - cd tasks-service && npm run test
+      - cd stats-service && npm run test
+      - cd frontend && npm run test
+
+  test:coverage:
+    desc: Exécute les tests avec couverture de code (>70% requis)
+    cmds:
+      - cd tasks-service && npm run test:coverage
+      - cd stats-service && npm run test:coverage
+      - cd frontend && npm run test:coverage
+
+  build:
+    desc: Construit les images Docker des 3 services
+    cmds:
+      - docker build -t {{.REGISTRY}}/frontend ./frontend --target production
+      - docker build -t {{.REGISTRY}}/tasks-service ./tasks-service --target production
+      - docker build -t {{.REGISTRY}}/stats-service ./stats-service --target production
+
+  push:
+    desc: Pousse les images dans le registry local (localhost:5001)
+    cmds:
+      - docker push {{.REGISTRY}}/frontend
+      - docker push {{.REGISTRY}}/tasks-service
+      - docker push {{.REGISTRY}}/stats-service
+
+  deploy:
+    desc: Déploie l'application sur Kubernetes via Helm
+    cmds:
+      - helm upgrade --install task-manager ./k8s/charts/task-manager --namespace task-manager --create-namespace
+
+  pipeline:
+    desc: Exécute toute la chaîne automatisée
+    cmds:
+      - task: lint
+      - task: test
+      - task: build
+      - task: push
+      - task: deploy

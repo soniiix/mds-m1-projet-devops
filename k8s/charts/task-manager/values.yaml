@@ -1,0 +1,30 @@
+namespace: default
+
+registry: localhost:5001
+
+images:
+  frontend:
+    repository: localhost:5001/frontend
+    tag: latest
+    pullPolicy: Always
+  tasksService:
+    repository: localhost:5001/tasks-service
+    tag: latest
+    pullPolicy: Always
+  statsService:
+    repository: localhost:5001/stats-service
+    tag: latest
+    pullPolicy: Always
+  postgres:
+    image: postgres:18-alpine
+
+ports:
+  frontend: 80
+  tasksService: 3001
+  statsService: 3002
+  postgres: 5432
+
+postgres:
+  user: taskuser
+  password: taskpassword
+  db: taskdb

@@ -1,0 +1,37 @@
+{
+  "name": "stats-service",
+  "version": "1.0.0",
+  "description": "Microservice for task statistics",
+  "main": "dist/server.js",
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch src/server.ts",
+    "build": "tsc",
+    "start": "node dist/server.js",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage",
+    "lint": "eslint . --max-warnings 0",
+    "format": "prettier --write ."
+  },
+  "dependencies": {
+    "express": "^5.2.1",
+    "cors": "^2.8.5",
+    "dotenv": "^17.2.3"
+  },
+  "devDependencies": {
+    "@types/express": "^5.0.6",
+    "@types/cors": "^2.8.17",
+    "@types/node": "^25.0.9",
+    "typescript": "^5.3.3",
+    "tsx": "^4.7.0",
+    "vitest": "^4.0.17",
+    "@vitest/coverage-v8": "^4.0.17",
+    "eslint": "^9.20.1",
+    "prettier": "^3.5.1",
+    "eslint-config-prettier": "^10.0.1",
+    "eslint-plugin-prettier": "^5.2.3",
+    "@typescript-eslint/eslint-plugin": "^8.24.0",
+    "@typescript-eslint/parser": "^8.24.0"
+  }
+}

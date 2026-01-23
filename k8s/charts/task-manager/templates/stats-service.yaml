@@ -1,0 +1,39 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: stats-service
+  labels:
+    app: stats-service
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: stats-service
+  template:
+    metadata:
+      labels:
+        app: stats-service
+    spec:
+      containers:
+      - name: stats-service
+        image: "{{ .Values.images.statsService.repository }}:{{ .Values.images.statsService.tag }}"
+        imagePullPolicy: {{ .Values.images.statsService.pullPolicy }}
+        ports:
+        - containerPort: {{ .Values.ports.statsService }}
+        env:
+        - name: PORT
+          value: "{{ .Values.ports.statsService }}"
+        - name: TASKS_SERVICE_URL
+          value: "http://tasks-service:{{ .Values.ports.tasksService }}"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: stats-service
+spec:
+  selector:
+    app: stats-service
+  ports:
+  - protocol: TCP
+    port: {{ .Values.ports.statsService }}
+    targetPort: {{ .Values.ports.statsService }}

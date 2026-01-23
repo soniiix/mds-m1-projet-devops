@@ -1,0 +1,120 @@
+services:
+  postgres:
+    image: postgres:18-alpine
+    container_name: demo-postgres
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+      PGDATA: /var/lib/postgresql/18/docker
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql
+      - ./tasks-service/init.sql:/docker-entrypoint-initdb.d/init.sql
+    networks:
+      - app-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  tasks-service:
+    image: tasks-service:1.0.0
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+        reservations:
+          cpus: '0.25'
+          memory: 256M
+    build:
+      context: ./tasks-service
+      dockerfile: dockerfile
+      target: development
+    ports:
+      - "${TASKS_PORT}:3001"
+    environment:
+      PORT: 3001
+      NODE_ENV: ${NODE_ENV}
+      DATABASE_URL: postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
+    volumes:
+      - ./tasks-service/src:/app/src
+      - /app/node_modules
+    networks:
+      - app-network
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+
+  stats-service:
+    build:
+      context: ./stats-service
+      dockerfile: dockerfile
+      target: development
+    ports:
+      - "${STATS_PORT}:3002"
+    environment:
+      PORT: 3002
+      NODE_ENV: ${NODE_ENV}
+      TASKS_SERVICE_URL: http://tasks-service:3001
+    volumes:
+      - ./stats-service/src:/app/src
+      - /app/node_modules
+    networks:
+      - app-network
+    depends_on:
+      - tasks-service
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: dockerfile
+      target: development
+    ports:
+      - "8081:5173"
+    environment:
+      VITE_TASKS_API_URL: http://localhost:${TASKS_PORT}/api/tasks
+      VITE_STATS_API_URL: http://localhost:${STATS_PORT}/api/stats
+    volumes:
+      - ./frontend/src:/app/src
+      - ./frontend/public:/app/public
+      - /app/node_modules
+    depends_on:
+      - tasks-service
+      - stats-service
+    restart: unless-stopped
+
+  adminer:
+    image: adminer:latest
+    container_name: demo-adminer
+    ports:
+      - "8080:8080"
+    networks:
+      - app-network
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+
+  registry:
+    image: registry:2
+    container_name: local-registry
+    ports:
+    - "5001:5000"
+    volumes:
+    - registry-data:/var/lib/registry
+    restart: unless-stopped
+
+volumes:
+  registry-data:
+  postgres-data:
+
+networks:
+  app-network:
+    driver: bridge
