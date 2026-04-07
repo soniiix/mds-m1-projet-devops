@@ -33,17 +33,24 @@ Le Taskfile gère :
 L'étape finale est le déploiement sur Kubernetes via Helm.
 J'ai tout regroupé dans un Chart Helm (`k8s/charts/task-manager`) pour faciliter le déploiement sur Kubernetes. Cela permet de gérer facilement les variables (replicas, ports, configMaps) sans changer chaque manifest yaml
 
+## Stratégie de tests + qualité du code
 
-## 🛠 Choix techniques et difficultés
+Pour l'ensemble de la stack, c'est Vitest qui est utilisé pour les tests.
 
-1. **Local Registry** : Plutôt que d'envoyer mes images sur le Docker Hub, j'ai préféré monter un registry local. C'est plus proche d'un environnement pro réel où les images restent sur un réseau privé.
-2. **Taskfile vs Makefile** : J'ai préféré Taskfile car il gère mieux les dépendances entre les étapes et les variables globales que Makefile, qui est parfois un peu trop "vieux-jeu".
-3. **Adminer et Healthchecks** : Sur d'autres projets, j'avais eu des soucis où les services démarraient avant la DB. J'ai ajouté des healthchecks et des `depends_on` avec `condition: service_healthy` dans Docker Compose pour éviter ça.
-4. **Multi-stage build** : C'était un point important pour moi de ne pas avoir des images de 1Go. Mes images finales sont beaucoup plus légères (autour de 150-200 Mo).
-5. **Helm** : Au début j'utilisais des fichiers YAML simples, mais Helm est devenu indispensable dès qu'il a fallu gérer les environnements et la répétition des manifestes pour les 3 services.
+### 1. Tests dans tasks-service (logique métier)
+Voici les types de tests que j'ai ajouté dans le service tasks-service :
+- vérification que les titres des tâches ne sont pas vides ou trop longs
+- tests sur la création, la mise à jour et le changement de statut
+- tests sur le code de tri par date et filtrage par statut (complétées / en cours)
 
-## Comment lancer le projet ?
+### 2. Tests dans stats-service
+Voici les types de tests que j'ai ajouté dans le service stats-service :
+- calcul du nombre total de tâches et du ratio de complétion
+- calcul des stats par jour et identification du jour le plus productif
+- calcul du taux de complétion moyen
 
-1. S'assurer que Docker et Kubernetes (type k3d ou Kind) sont installés.
-2. Installer les dépendances : `task install`
-3. Lancer la pipeline complète : `task pipeline`
+### 3. Tests dans frontend
+Pour le front, les tests vérifient que l'interface réagit correctement aux actions utilisateur en checkant le rendu global de l'application et en faisant des tests unitaires sur les composants clés (TaskForm : soumission de formulaire, TaskList : rendu de la liste, TaskStats : affichage des graphes/chiffres).
+
+### 4. Automatisation et Seuil de Couverture
+ESLint passe sur tous les fichiers pour garantir un code propre et chaque service est configuré pour que les tests échouent si la couverture descend en dessous de 70% (`task test:coverage`).
